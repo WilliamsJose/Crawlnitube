@@ -15,10 +15,12 @@ from flask_cors import CORS
 MAX_CACHE_SIZE = 100 # items
 CACHE_TTL = 10800 # 3 hours (seconds)
 
-BASE_URL = 'https://www.anitube.biz'
-LATEST_RELEASE = 'categoria/lancamentos'
-TITLE_EPISODE_PATTERN = r"^(.+) – Episódio (\d+)$"
-EPISODE_ID_PATTERN = r"https:\/\/www\.anitube\.biz\/(\d+)"
+BASE_URL = 'https://www.anitube.vip'
+# LATEST_RELEASE = 'categoria/lancamentos'
+# TITLE_EPISODE_PATTERN = r"^(.+) – Episódio (\d+)$" anitube.biz
+TITLE_EPISODE_PATTERN = r"^(.+) -*.* ep (\d+)$"
+# EPISODE_ID_PATTERN = r"https:\/\/www\.anitube\.biz\/(\d+)" anitube.biz
+EPISODE_ID_PATTERN = r"^.+\/(\d+)$"
 
 
 app = Flask(__name__)
@@ -60,19 +62,19 @@ def get_recent_episodes(page = 1):
   url = None
 
   if page == 1:
-    urlPath = "{0}/{1}".format(BASE_URL, LATEST_RELEASE)
+    urlPath = "{0}/?page=1".format(BASE_URL)
   else:
-    urlPath = "{0}/{1}/page/{2}".format(BASE_URL, LATEST_RELEASE, page)
+    urlPath = "{0}/?page={1}".format(BASE_URL, page)
 
   soup = make_request(urlPath)
 
   if soup:
     print(soup.title.text)
 
-    soup_anime_list = soup.find_all("div", class_="itemE")
+    soup_anime_list = soup.find("div", class_="mContainer_content").find_all("div", class_="epi_loop_item")
 
     for i, anime in enumerate(soup_anime_list):
-      title_text = anime.a.div.find_next_sibling("div").text
+      title_text = anime.a["title"]
       extract_title_ep = re.match(TITLE_EPISODE_PATTERN, title_text)
       
       if extract_title_ep:
@@ -83,7 +85,7 @@ def get_recent_episodes(page = 1):
 
       url = anime.a["href"]
       episodeId = re.match(EPISODE_ID_PATTERN, url).group(1)
-      image = anime.a.div.img["data-lazy-src"]
+      image = anime.a.div.img["src"]
 
       animeObj = {
         "title": title,
@@ -94,12 +96,14 @@ def get_recent_episodes(page = 1):
       }
 
       anime_list.append(animeObj)
+      
+    pagination = soup.find("div", class_="pagination")
+    hasNextPage = pagination.find("a", class_="page-numbers current").findNext("a").text.strip().isnumeric()
 
     result = {
       "currentPage": page,
-      "hasNextPage": "coming",
-      "hasPreviousPage": "coming",
-      "lastPage": "coming",
+      "hasNextPage": hasNextPage,
+      "hasPreviousPage": page > 1,
       "results": anime_list
     }
 
@@ -122,8 +126,8 @@ def recent_episodes():
     if latest:
       cache[cache_key] = latest
 
-  return jsonify({'data': latest})
+  return jsonify(latest)
 
-  
+
 if __name__ == '__main__':
   app.run(debug=True, port=4000)
