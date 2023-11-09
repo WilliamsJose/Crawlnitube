@@ -5,6 +5,7 @@ import random
 import re
 from flask import Flask, request, jsonify
 from cachetools import LRUCache, TTLCache
+from flask_cors import CORS
 
 # proxies = {
 #   "http": "http://your_proxy_url",
@@ -23,6 +24,7 @@ EPISODE_ID_PATTERN = r"https:\/\/www\.anitube\.biz\/(\d+)"
 app = Flask(__name__)
 
 cache = TTLCache(MAX_CACHE_SIZE, CACHE_TTL)
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}})
 
 def get_random_user_agent():
   user_agent = UserAgent()
