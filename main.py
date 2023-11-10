@@ -61,10 +61,7 @@ def get_recent_episodes(page = 1):
   episodeId = None
   url = None
 
-  if page == 1:
-    urlPath = "{0}/?page=1".format(BASE_URL)
-  else:
-    urlPath = "{0}/?page={1}".format(BASE_URL, page)
+  urlPath = "{0}/?page={1}".format(BASE_URL, page)
 
   soup = make_request(urlPath)
 
@@ -73,7 +70,7 @@ def get_recent_episodes(page = 1):
 
     soup_anime_list = soup.find("div", class_="mContainer_content").find_all("div", class_="epi_loop_item")
 
-    for i, anime in enumerate(soup_anime_list):
+    for anime in soup_anime_list:
       title_text = anime.a["title"]
       extract_title_ep = re.match(TITLE_EPISODE_PATTERN, title_text)
       
@@ -87,7 +84,7 @@ def get_recent_episodes(page = 1):
       episodeId = re.match(EPISODE_ID_PATTERN, url).group(1)
       image = anime.a.div.img["src"]
 
-      animeObj = {
+      anime_obj = {
         "title": title,
         "image": image,
         "episode": episode,
@@ -95,7 +92,7 @@ def get_recent_episodes(page = 1):
         "url": url
       }
 
-      anime_list.append(animeObj)
+      anime_list.append(anime_obj)
       
     pagination = soup.find("div", class_="pagination")
     hasNextPage = pagination.find("a", class_="page-numbers current").findNext("a").text.strip().isnumeric()
