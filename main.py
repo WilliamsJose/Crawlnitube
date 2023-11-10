@@ -106,6 +106,41 @@ def get_recent_episodes(page = 1):
 
   return result
 
+def search_anime(query):
+  if query == "":
+    return {"message": "You must enter a valid anime name"}
+  
+  url_path = "{0}/busca.php?s={1}&submit=Buscar".format(BASE_URL, query)
+  
+  soup = make_request(url_path)
+  
+  if soup:
+    soup_anime_list = soup.find("div", class_="lista_de_animes").find_all("div", class_="ani_loop_item")
+    anime_list = []
+    
+    for anime in soup_anime_list:
+      title = anime.find("div", class_="ani_loop_item_infos").find("a", class_="ani_loop_item_infos_nome").text
+      image = anime.find("div", class_="ani_loop_item_img").a.img["src"]
+      url = anime.find("div", class_="ani_loop_item_infos").find("a", class_="ani_loop_item_infos_nome")["href"]
+      
+      anime_obj = {
+        "title": title,
+        "image": image,
+        "url": url
+      }
+      
+      anime_list.append(anime_obj)
+    
+    result = {
+      "currentPage": 1,
+      "hasNextPage": False,
+      "hasPreviousPage": False,
+      "results": anime_list
+    }
+  
+  return result
+
+
 @app.route('/latest', methods=['GET'])
 def recent_episodes():
   page = int(request.args.get('page', 1))
@@ -125,6 +160,20 @@ def recent_episodes():
 
   return jsonify(latest)
 
+
+@app.route('/search', methods=['GET'])
+def search():
+  query = request.args.get('query')
+  cache_key = query
+  
+  if cache_key in cache:
+    response = cache[cache_key]
+  else:
+    response = search_anime(query)
+    if response:
+        cache[cache_key] = response
+  
+  return jsonify(response)
 
 if __name__ == '__main__':
   app.run(debug=True, port=4000)
