@@ -106,11 +106,11 @@ def get_recent_episodes(page = 1):
 
   return result
 
-def search_anime(query):
-  if query == "":
+def search_anime(anime_name):
+  if anime_name == "":
     return {"message": "You must enter a valid anime name"}
   
-  url_path = "{0}/busca.php?s={1}&submit=Buscar".format(BASE_URL, query)
+  url_path = "{0}/busca.php?s={1}&submit=Buscar".format(BASE_URL, anime_name)
   
   soup = make_request(url_path)
   
@@ -163,13 +163,17 @@ def recent_episodes():
 
 @app.route('/search', methods=['GET'])
 def search():
-  query = request.args.get('query')
-  cache_key = query
+  name = request.args.get('name')
+  cache_key = name
   
   if cache_key in cache:
     response = cache[cache_key]
   else:
-    response = search_anime(query)
+    response = search_anime(name)
+    if response:
+        cache[cache_key] = response
+  
+  return jsonify(response)
     if response:
         cache[cache_key] = response
   
