@@ -6,7 +6,7 @@
 - [x] Get recent episodes
 - [x] Search anime by name
   - [ ] ?Pagination for search
-- [ ] Get anime info by id or url
+- [x] Get anime info by id or url
 
 #### Endpoints
 - /latest?page={page number}

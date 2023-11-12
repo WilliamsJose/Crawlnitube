@@ -6,6 +6,7 @@ import re
 from flask import Flask, request, jsonify
 from cachetools import LRUCache, TTLCache
 from flask_cors import CORS
+from time import sleep
 
 # proxies = {
 #   "http": "http://your_proxy_url",
@@ -141,6 +142,41 @@ def search_anime(anime_name):
   return result
 
 
+def find_anime_info_by_id_or_video_id(anime_or_video_id):
+  should_continue = False
+
+  if anime_or_video_id.strip().isnumeric():
+    soup = make_request("{0}/video/{1}".format(BASE_URL, anime_or_video_id))
+    if soup:
+      url = soup.find("i", class_="spr listaEP").find_parent("a", class_="ep_control")["href"]
+      anime_info_url = "{0}{1}".format(BASE_URL, url)
+      sleep(0.2)
+      soup = make_request(anime_info_url)
+      if soup:
+        should_continue = True
+  else:
+    soup = make_request(anime_or_video_id)
+    if soup:
+      should_continue = True
+    
+  if should_continue:
+    anime_object = {}
+    anime_object["title"] = soup.find("div", class_="anime_container_titulo").text
+    anime_infos = soup.find("div", class_="anime_infos").find_all("div", class_="anime_info")
+    for info in anime_infos:
+      # anime_object[info.b.text] = info.b.next_element.text
+      links = info.find_all("a")
+      if len(links) > 0:
+        txt_aux = ""
+        for link in links:
+          txt_aux += "{0} ".format(link.get_text())
+          
+        anime_object[info.b.text.replace(":", "")] = txt_aux.strip()
+      else:
+        anime_object[info.b.text.replace(":", "")] = info.b.next_sibling.text.strip()
+  
+  return anime_object
+
 @app.route('/latest', methods=['GET'])
 def recent_episodes():
   page = int(request.args.get('page', 1))
@@ -174,8 +210,19 @@ def search():
         cache[cache_key] = response
   
   return jsonify(response)
+
+@app.route('/find', methods=['GET'])
+def find_anime():
+  id = request.args.get('id')
+  
+  cache_key = id
+  
+  if cache_key in cache:
+    response = cache[cache_key]
+  else:
+    response = find_anime_info_by_id_or_video_id(id)
     if response:
-        cache[cache_key] = response
+      cache[cache_key] = response
   
   return jsonify(response)
 
