@@ -1,10 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
-import random
 import re
-from flask import Flask, request, jsonify
-from cachetools import LRUCache, TTLCache
+from flask import Flask, request, jsonify, Response
+from cachetools import TTLCache
 from flask_cors import CORS
 from time import sleep
 
@@ -177,6 +176,20 @@ def find_anime_info_by_id_or_video_id(anime_or_video_id):
   
   return anime_object
 
+def stream_episode_by_id(id):
+  if id:
+    url = "https://ikaros.anicdn.net/appfullhd/{0}.mp4".format(id)
+    referer_url = "https://www.anitube.vip/playerricas.php?&img=https://www.anitube.vip/media/videos/tmb/{0}/default.jpg&url=https://ikaros.anicdn.net/appfullhd/{0}.mp4".format(id)
+    
+    headers = {
+      "Referer": referer_url
+    }
+    
+    soup = requests.get(url, headers=headers)
+    if soup:
+      print(soup.status_code)
+      return soup.content
+
 @app.route('/latest', methods=['GET'])
 def recent_episodes():
   page = int(request.args.get('page', 1))
@@ -226,5 +239,11 @@ def find_anime():
   
   return jsonify(response)
 
+@app.route('/stream', methods=['GET'])
+def stream_episode():
+  id  = request.args.get('id')
+  return Response(stream_episode_by_id(id), mimetype="video/mp4")
+  
+  
 if __name__ == '__main__':
   app.run(debug=True, port=4000)
