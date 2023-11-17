@@ -154,7 +154,7 @@ def find_anime_info_by_id_or_video_id(anime_or_video_id):
       if soup:
         should_continue = True
   else:
-    soup = make_request(anime_or_video_id)
+    soup = make_request(f"{BASE_URL}/anime/{anime_or_video_id}")
     if soup:
       should_continue = True
     
