@@ -7,19 +7,11 @@ from cachetools import TTLCache
 from flask_cors import CORS
 from time import sleep
 
-# proxies = {
-#   "http": "http://your_proxy_url",
-#   "https": "https://your_proxy_url"
-# }
-
 MAX_CACHE_SIZE = 100 # items
 CACHE_TTL = 10800 # 3 hours (seconds)
 
 BASE_URL = 'https://www.anitube.vip'
-# LATEST_RELEASE = 'categoria/lancamentos'
-# TITLE_EPISODE_PATTERN = r"^(.+) – Episódio (\d+)$" anitube.biz
 TITLE_EPISODE_PATTERN = r"^(.+) -*.* ep (\d+)$"
-# EPISODE_ID_PATTERN = r"https:\/\/www\.anitube\.biz\/(\d+)" anitube.biz
 EPISODE_ID_PATTERN = r"^.+\/(\d+)$"
 
 
@@ -40,7 +32,6 @@ def make_request(url, referer=None):
     headers['Referer'] = referer
 
   try:
-    # response = requests.get(url, headers=headers, proxies=proxies)
     response = requests.get(url, headers=headers)
     response.raise_for_status()
 
@@ -49,7 +40,7 @@ def make_request(url, referer=None):
     return soup
 
   except requests.exceptions.RequestException as e:
-    print(f"Erro na solicitação: {e}")
+    print(f"Request Error: {e}")
     return None
 
 def get_recent_episodes(page = 1):
@@ -61,7 +52,7 @@ def get_recent_episodes(page = 1):
   episodeId = None
   url = None
 
-  urlPath = "{0}/?page={1}".format(BASE_URL, page)
+  urlPath = f"{BASE_URL}/?page={page}"
 
   soup = make_request(urlPath)
 
@@ -110,7 +101,7 @@ def search_anime(anime_name):
   if anime_name == "":
     return {"message": "You must enter a valid anime name"}
   
-  url_path = "{0}/busca.php?s={1}&submit=Buscar".format(BASE_URL, anime_name)
+  url_path = f"{BASE_URL}/busca.php?s={anime_name}&submit=Buscar"
   
   soup = make_request(url_path)
   
@@ -145,10 +136,10 @@ def find_anime_info_by_id_or_video_id(anime_or_video_id):
   should_continue = False
 
   if anime_or_video_id.strip().isnumeric():
-    soup = make_request("{0}/video/{1}".format(BASE_URL, anime_or_video_id))
+    soup = make_request(f"{BASE_URL}/video/{anime_or_video_id}")
     if soup:
       url = soup.find("i", class_="spr listaEP").find_parent("a", class_="ep_control")["href"]
-      anime_info_url = "{0}{1}".format(BASE_URL, url)
+      anime_info_url = f"{BASE_URL}{url}"
       sleep(0.2)
       soup = make_request(anime_info_url)
       if soup:
@@ -163,7 +154,6 @@ def find_anime_info_by_id_or_video_id(anime_or_video_id):
     anime_object["title"] = soup.find("div", class_="anime_container_titulo").text
     anime_infos = soup.find("div", class_="anime_infos").find_all("div", class_="anime_info")
     for info in anime_infos:
-      # anime_object[info.b.text] = info.b.next_element.text
       links = info.find_all("a")
       if len(links) > 0:
         txt_aux = ""
@@ -174,12 +164,14 @@ def find_anime_info_by_id_or_video_id(anime_or_video_id):
       else:
         anime_object[info.b.text.replace(":", "")] = info.b.next_sibling.text.strip()
   
-  return anime_object
+    return anime_object
+  else:
+    return None
 
-def stream_episode_by_id(id):
+def stream_episode_by_id(id, quality = "appfullhd"):
   if id:
-    url = "https://ikaros.anicdn.net/appfullhd/{0}.mp4".format(id)
-    referer_url = "https://www.anitube.vip/playerricas.php?&img=https://www.anitube.vip/media/videos/tmb/{0}/default.jpg&url=https://ikaros.anicdn.net/appfullhd/{0}.mp4".format(id)
+    url = f"https://ikaros.anicdn.net/{quality}/{id}.mp4"
+    referer_url = f"https://www.anitube.vip/playerricas.php?&img=https://www.anitube.vip/media/videos/tmb/{id}/default.jpg&url=https://ikaros.anicdn.net/{quality}/{id}.mp4"
     
     headers = {
       "Referer": referer_url
