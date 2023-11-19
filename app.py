@@ -6,7 +6,7 @@ from config.config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
+CORS(app, resources={r"/anime/*": {"origins": "http://localhost:5173"}})
 
 app.register_blueprint(anime_bp)
 
