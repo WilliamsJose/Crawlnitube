@@ -4,3 +4,4 @@ class Config:
   BASE_URL = 'https://www.anitube.vip'
   TITLE_EPISODE_PATTERN = r"(.+) ?-*.* ep +(\d+)"
   EPISODE_ID_PATTERN = r".+\/(\d+)"
+  ID_FROM_URL = r".+\/(.+)"

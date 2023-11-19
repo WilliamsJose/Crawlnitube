@@ -5,6 +5,8 @@ import re
 from fake_useragent import UserAgent
 from flask import current_app
 from api.utils.cache_tools import has_cached, save_in_cache
+from api.utils.time_tools import time_to_minutes
+from time import strptime
 
 def get_random_user_agent():
   user_agent = UserAgent()
@@ -38,11 +40,6 @@ def get_recent_episodes(page=1):
   
   result = {}
   anime_list = []
-  title = None
-  episode = None
-  image = None
-  episodeId = None
-  url = None
   BASE_URL = current_app.config['BASE_URL']
   EPISODE_ID_PATTERN = current_app.config['EPISODE_ID_PATTERN']
   TITLE_EPISODE_PATTERN = current_app.config['TITLE_EPISODE_PATTERN']
@@ -65,16 +62,22 @@ def get_recent_episodes(page=1):
         episode = extract_title_ep.group(2)
       else:
         title = title_text
+        episode = None
 
       url = anime.a["href"]
       episodeId = re.match(EPISODE_ID_PATTERN, url).group(1)
       image = anime.a.div.img["src"]
+      timeStr = anime.a.div.find("div", class_="epi_loop_img_time").text
+      minutes = time_to_minutes(timeStr)
+      isSeries = minutes < 60
 
       anime_obj = {
         "title": title,
         "image": image,
         "episode": episode,
         "episodeID": episodeId,
+        "isSeries": isSeries,
+        "time": minutes,
         "url": url
       }
 
@@ -104,6 +107,7 @@ def search_anime(anime_name):
     return cache
   
   BASE_URL = current_app.config['BASE_URL']
+  ID_FROM_URL = current_app.config['ID_FROM_URL']
   
   url_path = f"{BASE_URL}/busca.php?s={anime_name}&submit=Buscar"
   
@@ -117,9 +121,11 @@ def search_anime(anime_name):
       title = anime.find("div", class_="ani_loop_item_infos").find("a", class_="ani_loop_item_infos_nome").text
       image = anime.find("div", class_="ani_loop_item_img").a.img["src"]
       url = anime.find("div", class_="ani_loop_item_infos").find("a", class_="ani_loop_item_infos_nome")["href"]
+      anime_id = re.match(ID_FROM_URL, url).group(1)
       
       anime_obj = {
         "title": title,
+        "animeId": anime_id,
         "image": image,
         "url": url
       }
