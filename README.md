@@ -13,5 +13,5 @@
 #### Endpoints
 - /latest?page={page number}
 - /search?name={anime name}
-- /find?id={anime id}
+- /info?id={anime id or episode id}
 - /stream?id={episode id}
