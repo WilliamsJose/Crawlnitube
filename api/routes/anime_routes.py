@@ -17,8 +17,8 @@ def search():
   
 @anime_bp.route('/info', methods=['GET'])
 def find_anime():
-    name = request.args.get('name')
-    results = find_anime_info(name)
+    id = request.args.get('id')
+    results = find_anime_info(id)
     return jsonify(results)
   
 @anime_bp.route('/stream', methods=['GET'])
