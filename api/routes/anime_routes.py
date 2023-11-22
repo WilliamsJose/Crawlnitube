@@ -23,5 +23,6 @@ def find_anime():
   
 @anime_bp.route('/stream', methods=['GET'])
 def stream_episode():
-  id  = request.args.get('id')
-  return Response(stream_episode_by_id(id), mimetype="video/mp4")
+  id = request.args.get('id')
+  response, status = stream_episode_by_id(id)
+  return Response(response, status, mimetype="video/mp4")

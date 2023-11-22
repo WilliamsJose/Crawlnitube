@@ -1,3 +1,4 @@
+from api.utils.logger import log_error
 
 def time_to_minutes(time_str):
   parts = time_str.split(':')
@@ -9,6 +10,6 @@ def time_to_minutes(time_str):
     minutes, seconds = map(int, parts)
     total_minutes = minutes + seconds / 60
   else:
-    raise ValueError("Invalid time format")
+    log_error(f"time_to_minutes: Invalid time format: {time_str}")
 
-  return  round(total_minutes, 0)
+  return round(total_minutes, 0)
