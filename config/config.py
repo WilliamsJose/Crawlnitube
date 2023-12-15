@@ -5,3 +5,5 @@ class Config:
   TITLE_EPISODE_PATTERN = r"(.+) ?-*.* ep +(\d+)"
   EPISODE_ID_PATTERN = r".+\/(\d+)"
   ID_FROM_URL = r".+\/(.+)"
+  ID_FROM_INFO_URL = r"anime(?:-dublado)?\/([\w-]+)"
+  EPISODE_ID_PRINCIPAL_PATTERN = r".+\/tmb\/(\d+).+"

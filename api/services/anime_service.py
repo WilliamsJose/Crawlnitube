@@ -7,6 +7,7 @@ from flask import current_app
 from api.utils.cache_tools import has_cached, save_in_cache
 from api.utils.time_tools import time_to_minutes
 from api.utils.logger import log_error
+from api.utils.string_tools import normalize_string
 
 def get_random_user_agent():
   user_agent = UserAgent()
@@ -38,11 +39,8 @@ def get_recent_episodes(page=1):
   if cache != None:
     return cache
   
-  result = {"status": 404}
-  anime_list = []
+  result = {}
   BASE_URL = current_app.config['BASE_URL']
-  EPISODE_ID_PATTERN = current_app.config['EPISODE_ID_PATTERN']
-  TITLE_EPISODE_PATTERN = current_app.config['TITLE_EPISODE_PATTERN']
 
   urlPath = f"{BASE_URL}/?page={page}"
 
@@ -50,55 +48,64 @@ def get_recent_episodes(page=1):
 
   if soup:
     try:
-      print(soup.title.text)
-
       soup_anime_list = soup.find("div", class_="mContainer_content").find_all("div", class_="epi_loop_item")
 
-      for anime in soup_anime_list:
-        title_text = anime.a["title"]
-        extract_title_ep = re.match(TITLE_EPISODE_PATTERN, title_text.lower())
-        
-        if extract_title_ep:
-          title = extract_title_ep.group(1).replace("-", "").strip()
-          episode = extract_title_ep.group(2)
-        else:
-          title = title_text
-          episode = None
-
-        url = anime.a["href"]
-        episodeId = re.match(EPISODE_ID_PATTERN, url).group(1)
-        image = anime.a.div.img["src"]
-        timeStr = anime.a.div.find("div", class_="epi_loop_img_time").text
-        minutes = time_to_minutes(timeStr)
-        isSeries = minutes < 60
-
-        anime_obj = {
-          "title": title,
-          "image": image,
-          "episode": episode,
-          "episodeID": episodeId,
-          "isSeries": isSeries,
-          "time": minutes,
-          "url": url
-        }
-
-        anime_list.append(anime_obj)
+      episodes = extract_episodes(soup_anime_list, "epi_loop_img_time")
         
       pagination = soup.find("div", class_="pagination")
       hasNextPage = pagination.find("a", class_="page-numbers current").findNext("a").text.strip().isnumeric()
 
-      result = {
-        "currentPage": page,
-        "hasNextPage": hasNextPage,
-        "hasPreviousPage": page > 1,
-        "results": anime_list
-      }
+      result["currentPage"] = page
+      result["hasNextPage"] = hasNextPage
+      result["hasPreviousPage"] = page > 1
+      result["results"] = episodes
       
       save_in_cache(cache_key, result)
     except Exception as e:
       log_error("An error occurred while scrapping", e)
+      return {"status": 404}
 
   return result
+
+def extract_episodes(soup_anime_list, time_class):
+  anime_list = []
+  EPISODE_ID_PATTERN = current_app.config['EPISODE_ID_PATTERN']
+  EPISODE_ID_PRINCIPAL_PATTERN = current_app.config['EPISODE_ID_PRINCIPAL_PATTERN']
+  TITLE_EPISODE_PATTERN = current_app.config['TITLE_EPISODE_PATTERN']
+  for anime in soup_anime_list:
+    title_text = anime.a["title"]
+    extract_title_ep = re.match(TITLE_EPISODE_PATTERN, title_text.lower())
+      
+    if extract_title_ep:
+      title = extract_title_ep.group(1).replace("-", "").strip()
+      episode = extract_title_ep.group(2)
+    else:
+      title = title_text
+      episode = None
+
+    url = anime.a["href"]
+    imageSrc = anime.a.div.img["src"]
+    episodeID = re.match(EPISODE_ID_PRINCIPAL_PATTERN, imageSrc).group(1)
+    episodeIDSecond = re.match(EPISODE_ID_PATTERN, url).group(1)
+    timeStr = anime.a.div.find("div", class_=time_class).text
+    minutes = time_to_minutes(timeStr)
+    isSeries = episode is not None
+    
+    if episodeID is None:
+      episodeID = episodeIDSecond
+
+    anime_obj = {
+      "title": title,
+      "image": imageSrc,
+      "episode": episode,
+      "episodeID": episodeID,
+      "isSeries": isSeries,
+      "time": minutes,
+      "url": url
+    }
+
+    anime_list.append(anime_obj)
+  return anime_list
 
 def search_anime(anime_name):
   if anime_name == "":
@@ -131,7 +138,7 @@ def search_anime(anime_name):
         
         anime_obj = {
           "title": title,
-          "animeId": anime_id,
+          "id": anime_id,
           "image": image,
           "url": url
         }
@@ -150,59 +157,97 @@ def search_anime(anime_name):
       log_error("An error occurred while scrapping", e)
   return result
 
-def stream_episode_by_id(id, quality = "appfullhd"):
+def stream_episode_by_id(id, quality = "appfullhd", chunk_size=1024):
   if id:
-    url = f"https://ikaros.anicdn.net/{quality}/{id}.mp4"
-    referer_url = f"https://www.anitube.vip/playerricas.php?&img=https://www.anitube.vip/media/videos/tmb/{id}/default.jpg&url=https://ikaros.anicdn.net/{quality}/{id}.mp4"
+    attempt = 1
+    while(True):
+      url = f"https://ikaros.anicdn.net/{quality}/{id}.mp4"
+      referer_url = f"https://www.anitube.vip/playerricas.php?&img=https://www.anitube.vip/media/videos/tmb/{id}/default.jpg&url=https://ikaros.anicdn.net/{quality}/{id}.mp4"
+      
+      headers = {
+        "Referer": referer_url
+      }
     
-    headers = {
-      "Referer": referer_url
-    }
-    
-    try:
-      response = requests.get(url, headers=headers)
-      response.raise_for_status()
-      return response.content, response.status_code
-    except Exception as e:
-      log_error(f"An error occurred in request url: {url}", e)
+      try:
+        response = requests.get(url, headers=headers, stream=True)
+        response.raise_for_status()
+        # return response.content, response.status_code
+        for chunk in response.iter_content(chunk_size=chunk_size):
+          if chunk:
+            yield bytes(chunk)
+      except Exception as e:
+        log_error(f"Stream error attempt - {attempt}: ", e)
+        if attempt == 1:
+          quality = "apphd2"
+        elif attempt == 2:
+          quality = "apphd"
+        elif attempt == 3:
+          break
+        attempt += 1
+        continue
 
-    return None, response.status_code
+  return None, '404'
 
-def find_anime_info(anime_or_video_id):
+def find_anime_info(anime_or_video_id, page):
   
-  cache_key = f"info_{anime_or_video_id}"
+  cache_key = f"info_{anime_or_video_id}_page_{page}"
   
   cache = has_cached(cache_key)
   if cache != None:
     return cache
   
   BASE_URL = current_app.config['BASE_URL']
+  ID_FROM_INFO_URL = current_app.config['ID_FROM_INFO_URL']
   
   try:
     if anime_or_video_id.strip().isnumeric():
       soup = make_request(f"{BASE_URL}/video/{anime_or_video_id}")
       if soup:
         url = soup.find("i", class_="spr listaEP").find_parent("a", class_="ep_control")["href"]
-        anime_info_url = f"{BASE_URL}{url}"
+        anime_info_url = f"{BASE_URL}{url}/page/{page}"
         sleep(0.2)
         soup = make_request(anime_info_url)
     else:
-      soup = make_request(f"{BASE_URL}/anime/{anime_or_video_id}")
+      soup = make_request(f"{BASE_URL}/anime/{anime_or_video_id}/page/{page}")
       
     if soup:
       anime_object = {}
       anime_object["title"] = soup.find("div", class_="anime_container_titulo").text
+      anime_object["description"] = soup.find("div", class_="sinopse_container_content").text
+      
       anime_infos = soup.find("div", class_="anime_infos").find_all("div", class_="anime_info")
+      
       for info in anime_infos:
         links = info.find_all("a")
         if len(links) > 0:
           txt_aux = ""
           for link in links:
             txt_aux += "{0} ".format(link.get_text())
-            
-          anime_object[info.b.text.replace(":", "")] = txt_aux.strip()
+          
+          normalized_string = normalize_string(info.b.text.replace(":", ""))
+          anime_object[normalized_string] = txt_aux.strip()
         else:
-          anime_object[info.b.text.replace(":", "")] = info.b.next_sibling.text.strip()
+          normalized_string = normalize_string(info.b.text.replace(":", ""))
+          anime_object[normalized_string] = info.b.next_sibling.text.strip()
+      
+      soup_episodes = soup.find_all("div", class_="animepag_episodios_item")
+      
+      episodes = extract_episodes(soup_episodes, "animepag_episodios_item_time")
+      anime_object["episodes"] = episodes
+        
+      pagination = soup.find("div", class_="pagination")
+      hasNextPage = pagination.find("a", class_="page-numbers current").findNext("a").text.strip().isnumeric()
+      
+      meta_url = soup.find("meta", attrs={"property": "og:url"})["content"]
+      anime_id = re.compile(ID_FROM_INFO_URL).search(meta_url).group(1)
+      
+      poster_url = soup.find("div", class_="anime_img").img["src"]
+      
+      anime_object["currentPage"] = page
+      anime_object["hasNextPage"] = hasNextPage
+      anime_object["hasPreviousPage"] = page > 1
+      anime_object["id"] = anime_id
+      anime_object["posterUrl"] = poster_url
     
       if anime_object is not None:
         save_in_cache(cache_key, anime_object)

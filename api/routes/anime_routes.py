@@ -18,11 +18,12 @@ def search():
 @anime_bp.route('/info', methods=['GET'])
 def find_anime():
     id = request.args.get('id')
-    results = find_anime_info(id)
+    page = int(request.args.get('page', 1))
+    results = find_anime_info(id, page)
     return jsonify(results)
   
 @anime_bp.route('/stream', methods=['GET'])
 def stream_episode():
   id = request.args.get('id')
-  response, status = stream_episode_by_id(id)
-  return Response(response, status, mimetype="video/mp4")
+  response_generator = stream_episode_by_id(id)
+  return Response(response_generator, mimetype="video/mp4")
