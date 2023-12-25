@@ -26,4 +26,8 @@ def find_anime():
 def stream_episode():
   id = request.args.get('id')
   response_generator = stream_episode_by_id(id)
-  return Response(response_generator, mimetype="video/mp4")
+  response = Response(response_generator, mimetype="application/vnd.apple.mpegurl")
+#   response = Response(response_generator, mimetype="application/x-mpegURL")
+#   response = Response(response_generator, mimetype="video/mp4")
+  response.headers.add('Accept-Ranges', 'bytes')
+  return response

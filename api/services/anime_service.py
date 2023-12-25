@@ -94,6 +94,8 @@ def extract_episodes(soup_anime_list, time_class):
     if episodeID is None:
       episodeID = episodeIDSecond
 
+    videoRef = f"/anime/stream?id={episodeID}"
+    
     anime_obj = {
       "title": title,
       "image": imageSrc,
@@ -101,7 +103,7 @@ def extract_episodes(soup_anime_list, time_class):
       "episodeID": episodeID,
       "isSeries": isSeries,
       "time": minutes,
-      "url": url
+      "url": videoRef
     }
 
     anime_list.append(anime_obj)
@@ -172,9 +174,13 @@ def stream_episode_by_id(id, quality = "appfullhd", chunk_size=1024):
         response = requests.get(url, headers=headers, stream=True)
         response.raise_for_status()
         # return response.content, response.status_code
+        i = 0
         for chunk in response.iter_content(chunk_size=chunk_size):
           if chunk:
+            print("chunk ", i)
+            i = i + 1
             yield bytes(chunk)
+        print("completed")
       except Exception as e:
         log_error(f"Stream error attempt - {attempt}: ", e)
         if attempt == 1:
