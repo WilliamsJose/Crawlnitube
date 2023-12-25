@@ -57,7 +57,6 @@ def get_recent_episodes(page=1):
 
       result["currentPage"] = page
       result["hasNextPage"] = hasNextPage
-      result["hasPreviousPage"] = page > 1
       result["results"] = episodes
       
       save_in_cache(cache_key, result)
@@ -78,10 +77,8 @@ def extract_episodes(soup_anime_list, time_class):
       
     if extract_title_ep:
       title = extract_title_ep.group(1).replace("-", "").strip()
-      episode = extract_title_ep.group(2)
     else:
       title = title_text
-      episode = None
 
     url = anime.a["href"]
     imageSrc = anime.a.div.img["src"]
@@ -89,6 +86,7 @@ def extract_episodes(soup_anime_list, time_class):
     episodeIDSecond = re.match(EPISODE_ID_PATTERN, url).group(1)
     timeStr = anime.a.div.find("div", class_=time_class).text
     minutes = time_to_minutes(timeStr)
+    episode = str(anime.a.div.next_sibling.next_sibling.div.next_sibling.next_sibling.text)[3:].strip()
     isSeries = episode is not None
     
     if episodeID is None:
@@ -150,7 +148,6 @@ def search_anime(anime_name):
       result = {
         "currentPage": 1,
         "hasNextPage": False,
-        "hasPreviousPage": False,
         "results": anime_list
       }
     
@@ -195,10 +192,9 @@ def stream_episode_by_id(id, quality = "appfullhd", chunk_size=1024):
   return None, '404'
 
 def find_anime_info(anime_or_video_id, page):
-  
   cache_key = f"info_{anime_or_video_id}_page_{page}"
-  
   cache = has_cached(cache_key)
+  
   if cache != None:
     return cache
   
@@ -218,42 +214,42 @@ def find_anime_info(anime_or_video_id, page):
       
     if soup:
       anime_object = {}
-      anime_object["title"] = soup.find("div", class_="anime_container_titulo").text
-      anime_object["description"] = soup.find("div", class_="sinopse_container_content").text
-      
-      anime_infos = soup.find("div", class_="anime_infos").find_all("div", class_="anime_info")
-      
-      for info in anime_infos:
-        links = info.find_all("a")
-        if len(links) > 0:
-          txt_aux = ""
-          for link in links:
-            txt_aux += "{0} ".format(link.get_text())
-          
-          normalized_string = normalize_string(info.b.text.replace(":", ""))
-          anime_object[normalized_string] = txt_aux.strip()
-        else:
-          normalized_string = normalize_string(info.b.text.replace(":", ""))
-          anime_object[normalized_string] = info.b.next_sibling.text.strip()
       
       soup_episodes = soup.find_all("div", class_="animepag_episodios_item")
-      
       episodes = extract_episodes(soup_episodes, "animepag_episodios_item_time")
-      anime_object["episodes"] = episodes
-        
       pagination = soup.find("div", class_="pagination")
-      hasNextPage = pagination.find("a", class_="page-numbers current").findNext("a").text.strip().isnumeric()
-      
+      has_next_page = pagination.find("a", class_="page-numbers current").findNext("a").text.strip().isnumeric()
       meta_url = soup.find("meta", attrs={"property": "og:url"})["content"]
       anime_id = re.compile(ID_FROM_INFO_URL).search(meta_url).group(1)
-      
       poster_url = soup.find("div", class_="anime_img").img["src"]
+      infos = soup.find_all("div", class_="anime_info")
+      alt_title = str(infos[0].b.next_sibling.text).strip()
+      total_episodes = str(infos[1].b.next_sibling.text).strip()
+      release_date = str(infos[2].b.next_sibling.text).strip() if str(infos[2].b.next_sibling.text).strip() != "" else str(infos[2].a.text).strip()
+      author = str(infos[3].b.next_sibling.text).strip()
+      direction = str(infos[4].b.next_sibling.text).strip()
+      studio = str(infos[5].b.next_sibling.text).strip()
+      status = str(infos[6].b.next_sibling.text).strip()
+      genres_list = infos[7].find_all("a")
+      genres = []
+      for genre in genres_list:
+        genres.append(str(genre.text).strip())
       
+      anime_object["title"] = str(soup.find("div", class_="anime_container_titulo").text).strip()
+      anime_object["description"] = str(soup.find("div", class_="sinopse_container_content").text).strip()
+      anime_object["episodes"] = episodes
       anime_object["currentPage"] = page
-      anime_object["hasNextPage"] = hasNextPage
-      anime_object["hasPreviousPage"] = page > 1
+      anime_object["hasNextPage"] = has_next_page
       anime_object["id"] = anime_id
       anime_object["posterUrl"] = poster_url
+      anime_object["altTitle"] = alt_title
+      anime_object["totalEpisodes"] = total_episodes
+      anime_object["releaseDate"] = release_date
+      anime_object["author"] = author
+      anime_object["direction"] = direction
+      anime_object["studio"] = studio
+      anime_object["status"] = status
+      anime_object["genres"] = genres
     
       if anime_object is not None:
         save_in_cache(cache_key, anime_object)
