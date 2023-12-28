@@ -8,6 +8,7 @@ from api.utils.cache_tools import has_cached, save_in_cache
 from api.utils.time_tools import time_to_minutes
 from api.utils.logger import log_error
 from api.utils.string_tools import normalize_string
+from api.utils.season_mapper import map_season
 
 def get_random_user_agent():
   user_agent = UserAgent()
@@ -140,7 +141,7 @@ def search_anime(anime_name):
           "title": title,
           "id": anime_id,
           "image": image,
-          "url": url
+          "url": url #mudar para url da api
         }
         
         anime_list.append(anime_obj)
@@ -230,13 +231,16 @@ def find_anime_info(anime_or_video_id, page):
       direction = str(infos[4].b.next_sibling.text).strip()
       studio = str(infos[5].b.next_sibling.text).strip()
       status = str(infos[6].b.next_sibling.text).strip()
+      description = str(soup.find("div", class_="sinopse_container_content").text).strip()
+      season = map_season(description)
+      
       genres_list = infos[7].find_all("a")
       genres = []
       for genre in genres_list:
         genres.append(str(genre.text).strip())
       
       anime_object["title"] = str(soup.find("div", class_="anime_container_titulo").text).strip()
-      anime_object["description"] = str(soup.find("div", class_="sinopse_container_content").text).strip()
+      anime_object["description"] = description
       anime_object["episodes"] = episodes
       anime_object["currentPage"] = page
       anime_object["hasNextPage"] = has_next_page
@@ -250,6 +254,7 @@ def find_anime_info(anime_or_video_id, page):
       anime_object["studio"] = studio
       anime_object["status"] = status
       anime_object["genres"] = genres
+      anime_object["season"] = season
     
       if anime_object is not None:
         save_in_cache(cache_key, anime_object)
