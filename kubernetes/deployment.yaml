@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crawlnitube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crawlnitube
+  template:
+    metadata:
+      labels:
+        app: crawlnitube
+    spec:
+      containers:
+      - name: crawlnitube
+        image: python:3.11.3
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+      volumes:
+      - name: app-volume
+        hostPath:
+          path: /

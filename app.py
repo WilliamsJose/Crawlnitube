@@ -6,9 +6,9 @@ from config.config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-CORS(app, resources={r"/anime/*": {"origins": "http://localhost:5173"}})
+CORS(app, resources={r"/anime/*": {"origins": "*"}})
 
 app.register_blueprint(anime_bp)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=4000)
+    app.run(debug=True, port=4000, host='0.0.0.0')
