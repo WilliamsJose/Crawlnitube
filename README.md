@@ -36,7 +36,7 @@
 
 | Param        | Type       | Description                                 |
 | :----------- | :--------- | :------------------------------------------ |
-| `page`       | `string`   | **Optional**. For navigation between pages  |
+| `page`       | `number`   | **Optional**. For navigation between pages  |
 
 #### Stream episode by id
 
