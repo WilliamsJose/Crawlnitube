@@ -1,54 +1,114 @@
+<style>
+    table {
+        width: 100%;
+    }
+</style>
+
 <h1 align="center"> Crawlnitube </h1>
 
 <p align="center">Anitube Api scrapper</p>
 
-#### Some features
-- [x] Get recent episodes
-- [x] Search anime by name
-  - [ ] ?Pagination for search
-- [x] Get anime info by id or url
-  - [ ] Pagination for episodes in anime info
-- [x] Get Stream episode by id
+### Api documentation
 
-#### Endpoints
-- /anime/latest?page={page number}
-- /anime/search?name={anime name}
-- /anime/info?id={anime id or episode id}
-- /anime/stream?id={episode id}
+#### Latest animes released
+ <table>
+  <tr>
+    <th>Company</th>
+    <th>Contact</th>
+    <th>Country</th>
+  </tr>
+  <tr>
+    <td>Alfreds Futterkiste</td>
+    <td>Maria Anders</td>
+    <td>Germany</td>
+  </tr>
+  <tr>
+    <td>Centro comercial Moctezuma</td>
+    <td>Francisco Chang</td>
+    <td>Mexico</td>
+  </tr>
+</table> 
 
-### TODO
-- na /info trazer todos os eps do anime
+```http
+  GET /anime/latest?page={page number}
+```
+
+| Param         | Type       | Description                                |
+| :------------ | :--------- | :----------------------------------------- |
+| `page`        | `number`   | **Optional**. For navigation between pages |
+
+#### Search for anime by name
+
+```http
+  GET /anime/search?name={anime name}
+```
+
+| Param        | Type       | Description                                              |
+| :----------- | :--------- | :------------------------------------------------------- |
+| `name`       | `string`   | **Required**. So you don't know what you want? Try latest |
+
+#### Anime info like title, description, episodes, etc.
+
+```http
+  GET /anime/info?id={anime id or episode id}&page={page number}
+```
+
+| Param        | Type                 | Description                 |
+| :----------- | :------------------- | :-------------------------- |
+| `id`         | `string \| number`   | **Required**. to find       |
+
+| Param        | Type       | Description                                 |
+| :----------- | :--------- | :------------------------------------------ |
+| `page`       | `string`   | **Optional**. For navigation between pages  |
+
+#### Stream episode by id
+
+```http
+  GET /anime/stream?id={episode id}
+```
+
+| Param        | Type                 | Description                 |
+| :----------- | :------------------- | :-------------------------- |
+| `id`         | `number`             | **Required**. to stream     |
 
 
--- notes, works on jsfiddle
-<head>
-  <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet" />
 
-  <!-- If you'd like to support IE8 (for Video.js versions prior to v7) -->
-  <!-- <script src="https://vjs.zencdn.net/ie8/1.1.2/videojs-ie8.min.js"></script> -->
-</head>
+### Running
 
-<body>
-  <video
-    id="my-video"
-    class="video-js"
-    controls
-    preload="auto"
-    width="640"
-    height="264"
-    poster="https://www.anitube.vip/media/videos/tmb/280260/default.jpg"
-    data-setup='{"controls": true, "autoplay": false, "preload": "auto"}'
-  >
-    <source src="http://127.0.0.1:4000/anime/stream?id=280260" type="video/mp4" />
-    <!-- <source src="MY_VIDEO.webm" type="video/webm" /> -->
-    <p class="vjs-no-js">
-      To view this video please enable JavaScript, and consider upgrading to a
-      web browser that
-      <a href="https://videojs.com/html5-video-support/" target="_blank"
-        >supports HTML5 video</a
-      >
-    </p>
-  </video>
+Clone repo
 
-  <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
-</body>
+```bash
+  git clone https://github.com/WilliamsJose/Crawlnitube.git
+```
+
+Go to created dir
+
+```bash
+  cd Crawlnitube
+```
+#### Local with python 3.11 or newest version
+
+Install deps
+
+```bash
+  pip install -r requirements.txt
+```
+
+Start
+
+```bash
+  python app.py
+```
+#### With docker
+
+Build
+
+```bash
+  sudo docker build -t crawlnitube .
+```
+
+And run
+
+```bash
+  docker run -p 4000:4000 --name crawlnitube crawlnitube:latest
+```
