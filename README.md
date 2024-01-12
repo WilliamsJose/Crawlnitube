@@ -1,9 +1,3 @@
-<style>
-    table {
-        width: 100%;
-    }
-</style>
-
 <h1 align="center"> Crawlnitube </h1>
 
 <p align="center">Anitube Api scrapper</p>
@@ -11,7 +5,7 @@
 ### Api documentation
 
 #### Latest animes released
- <table>
+ <table style="width:100%;">
   <tr>
     <th>Company</th>
     <th>Contact</th>
