@@ -98,3 +98,9 @@ if running on minikube, this could be of great help before the next commands:
 ```bash
   docker build -t crawlnitube:latest . && kubectl apply -f kubernetes/
 ```
+
+to get url and view on browser just run
+
+```bash
+  minikube service crawlnitube --url
+```
