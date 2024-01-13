@@ -81,7 +81,7 @@ Start
 Build
 
 ```bash
-  sudo docker build -t crawlnitube .
+  docker build -t crawlnitube .
 ```
 
 And run
