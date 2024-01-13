@@ -14,11 +14,12 @@ spec:
     spec:
       containers:
       - name: crawlnitube
-        image: python:3.11.3
-        volumeMounts:
-        - name: app-volume
-          mountPath: /app
-      volumes:
-      - name: app-volume
-        hostPath:
-          path: /
+        image: crawlnitube:latest
+        imagePullPolicy: Never
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 4000
+

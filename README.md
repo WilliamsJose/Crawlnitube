@@ -89,3 +89,12 @@ And run
 ```bash
   docker run -p 4000:4000 --name crawlnitube crawlnitube:latest
 ```
+
+#### With Kubernetes
+
+if running on minikube, this could be of great help before the next commands: 
+`eval $(minikube docker-env)`
+
+```bash
+  docker build -t crawlnitube:latest . && kubectl apply -f kubernetes/
+```
