@@ -161,14 +161,17 @@ def stream_episode_by_id(id, quality = "appfullhd", chunk_size=1024):
   if id:
     attempt = 1
     while(True):
-      url = f"https://ikaros.anicdn.net/{quality}/{id}.mp4"
-      referer_url = f"https://www.anitube.vip/playerricas.php?&img=https://www.anitube.vip/media/videos/tmb/{id}/default.jpg&url=https://ikaros.anicdn.net/{quality}/{id}.mp4"
+      url = f"https://cdn8.anicdn.net/{quality}/{id}.mp4"
+      # referer_url = f"https://www.anitube.vip/playerricas.php?&img=https://www.anitube.vip/media/videos/tmb/{id}/default.jpg&url=https://cdn8.anicdn.net/{quality}/{id}.mp4"
+      referer_url = f"https://www.anitube.vip/"
       
       headers = {
-        "Referer": referer_url
+        "Referer": referer_url,
+        "wmsAuthSign": "c2VydmVyX3RpbWU9MS8yMS8yMDI1IDk6MTc6MzkgUE0maGFzaF92YWx1ZT1VR3NDMDhTdldycHBXMXFmdTlTd3lRPT0mdmFsaWRtaW51dGVzPTEwODAwJnN0cm1fbGVuPTA="
       }
     
       try:
+        # tentar retornar o player de uma vez, ao inves de pegar os bytes
         response = requests.get(url, headers=headers, stream=True)
         response.raise_for_status()
         # return response.content, response.status_code
